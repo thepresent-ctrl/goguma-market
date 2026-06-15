@@ -1,0 +1,137 @@
+@import "tailwindcss";
+
+:root {
+  --goguma-orange: #FF6B35;
+  --goguma-yellow: #FFD23F;
+  --goguma-purple: #9B59B6;
+  --goguma-pink: #FF69B4;
+  --goguma-green: #2ECC71;
+  --goguma-sky: #3498DB;
+  --goguma-bg: #FFF9F0;
+  --goguma-dark: #2C1810;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--goguma-bg);
+  font-family: 'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif;
+  color: var(--goguma-dark);
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.5) rotate(-10deg); opacity: 0; }
+  60% { transform: scale(1.1) rotate(3deg); }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-bounce-in {
+  animation: bounce-in 0.6s ease-out forwards;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.goguma-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 16px;
+  border: 3px solid var(--goguma-dark);
+  box-shadow: 4px 4px 0px var(--goguma-dark);
+  transition: all 0.1s ease;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.goguma-btn:hover {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px var(--goguma-dark);
+}
+
+.goguma-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px var(--goguma-dark);
+}
+
+.goguma-btn-orange {
+  background: var(--goguma-orange);
+  color: white;
+}
+
+.goguma-btn-yellow {
+  background: var(--goguma-yellow);
+  color: var(--goguma-dark);
+}
+
+.goguma-btn-purple {
+  background: var(--goguma-purple);
+  color: white;
+}
+
+.goguma-btn-white {
+  background: white;
+  color: var(--goguma-dark);
+}
+
+.goguma-card {
+  background: white;
+  border: 3px solid var(--goguma-dark);
+  border-radius: 20px;
+  box-shadow: 6px 6px 0px var(--goguma-dark);
+  padding: 32px;
+}
+
+.goguma-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 3px solid var(--goguma-dark);
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  background: #FFFBF5;
+  outline: none;
+  transition: all 0.15s ease;
+  color: var(--goguma-dark);
+}
+
+.goguma-input:focus {
+  border-color: var(--goguma-orange);
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.15);
+  background: white;
+}
+
+.goguma-input::placeholder {
+  color: #C0A882;
+  font-weight: 400;
+}
+
+.star-bg {
+  background-image:
+    radial-gradient(circle, #FFD23F 1px, transparent 1px),
+    radial-gradient(circle, #FF69B4 1px, transparent 1px),
+    radial-gradient(circle, #3498DB 1px, transparent 1px);
+  background-size: 60px 60px, 90px 90px, 120px 120px;
+  background-position: 0 0, 30px 30px, 60px 10px;
+}
