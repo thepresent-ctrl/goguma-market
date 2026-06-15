@@ -31,14 +31,15 @@ export default function SignupPage() {
       password,
       options: {
         data: { nickname },
+        emailRedirectTo: `${location.origin}/auth/callback`,
       },
     })
 
     if (error) {
-      if (error.message.includes('already registered')) {
+      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
         setError('이미 가입된 이메일이에요! 😅')
       } else {
-        setError('회원가입 중 오류가 났어요 😢 다시 시도해봐요')
+        setError(`오류: ${error.message}`)
       }
       setLoading(false)
     } else {
