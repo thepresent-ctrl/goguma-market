@@ -39,6 +39,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const isOwner = user.id === product.user_id
   const status = STATUS_LABEL[product.status] ?? STATUS_LABEL.selling
 
+  // 작성자(판매자) 프로필
+  const { data: seller } = await supabase
+    .from('profiles')
+    .select('nickname, avatar_url')
+    .eq('id', product.user_id)
+    .single()
+
   // 좋아요: 개수 + 내가 눌렀는지
   const { count: likeCount } = await supabase
     .from('likes')
@@ -119,6 +126,27 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <p className="text-3xl font-black mb-4" style={{ color: 'var(--goguma-orange)' }}>
             {product.price.toLocaleString()}원
           </p>
+
+          {/* 작성자 — 클릭 시 프로필로 이동 */}
+          <Link
+            href={`/profile/${product.user_id}`}
+            className="flex items-center gap-2 mb-4 w-fit rounded-full pr-3 py-1 hover:bg-gray-50 transition-colors"
+          >
+            <span
+              className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center bg-gray-100"
+              style={{ border: '2px solid black' }}
+            >
+              {seller?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={seller.avatar_url} alt={seller.nickname} className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-lg">👤</span>
+              )}
+            </span>
+            <span className="font-bold text-sm text-gray-700">
+              {seller?.nickname ?? '고구마유저'}
+            </span>
+          </Link>
 
           <hr className="border-dashed border-gray-200 mb-4" />
 

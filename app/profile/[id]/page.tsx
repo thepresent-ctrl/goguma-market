@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 
 const CATEGORY_LABEL: Record<string, string> = {
@@ -11,36 +11,31 @@ const CATEGORY_LABEL: Record<string, string> = {
   etc: '📦 기타',
 }
 
-export default async function MarketPage() {
+export default async function ProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const supabase = await createClient()
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('nickname')
-    .eq('id', user.id)
+    .select('nickname, avatar_url, bio, created_at')
+    .eq('id', id)
     .single()
 
-  const nickname = profile?.nickname ?? '고구마'
+  if (!profile) notFound()
 
+  const isMe = user.id === id
+
+  // 이 사용자가 올린 상품
   const { data: products } = await supabase
     .from('products')
     .select('*')
+    .eq('user_id', id)
     .order('created_at', { ascending: false })
 
-  // 판매자 닉네임 한 번에 가져오기
-  const userIds = [...new Set(products?.map(p => p.user_id) ?? [])]
-  const { data: sellers } = await supabase
-    .from('profiles')
-    .select('id, nickname')
-    .in('id', userIds)
-
-  const sellerMap: Record<string, string> = Object.fromEntries(
-    sellers?.map(s => [s.id, s.nickname]) ?? []
-  )
-
-  // 상품별 좋아요 수 / 댓글 수 (한 번에 가져와서 집계)
+  // 상품별 좋아요 수 / 댓글 수 집계
   const productIds = products?.map(p => p.id) ?? []
 
   const { data: allLikes } = productIds.length
@@ -67,28 +62,51 @@ export default async function MarketPage() {
             고구마마켓
           </span>
         </Link>
-        <div className="flex items-center gap-3">
-          <Link href={`/profile/${user.id}`} className="font-bold text-sm text-gray-600 hover:text-gray-900 transition-colors">
-            👋 {nickname}님
-          </Link>
-          <form action="/auth/signout" method="post">
-            <button type="submit" className="goguma-btn goguma-btn-white text-sm py-2 px-4">
-              로그아웃
-            </button>
-          </form>
-        </div>
+        <Link href="/market" className="goguma-btn goguma-btn-white text-sm py-2 px-4">
+          ← 목록
+        </Link>
       </nav>
 
       <div className="max-w-2xl mx-auto">
-        <Link href="/market/sell" className="goguma-btn goguma-btn-orange w-full mb-6 block text-center">
-          🏷️ 내 물건 팔기
-        </Link>
+        {/* 프로필 카드 */}
+        <div className="goguma-card text-center mb-6">
+          <div
+            className="w-24 h-24 rounded-full mx-auto mb-3 overflow-hidden flex items-center justify-center bg-gray-100"
+            style={{ border: '3px solid black', boxShadow: '4px 4px 0px black' }}
+          >
+            {profile.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar_url} alt={profile.nickname} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-5xl">🍠</span>
+            )}
+          </div>
+
+          <h1 className="text-2xl font-black">{profile.nickname}</h1>
+          <p className="text-xs text-gray-400 font-semibold mt-1">
+            가입일: {new Date(profile.created_at).toLocaleDateString('ko-KR')}
+          </p>
+
+          <p className="font-semibold text-gray-600 mt-4 whitespace-pre-wrap">
+            {profile.bio ? profile.bio : <span className="text-gray-400">아직 자기소개가 없어요 🙂</span>}
+          </p>
+
+          {isMe && (
+            <Link href="/profile/edit" className="goguma-btn goguma-btn-yellow inline-block mt-5 py-2 px-5 text-sm">
+              ✏️ 프로필 수정
+            </Link>
+          )}
+        </div>
+
+        {/* 작성한 글 모아보기 */}
+        <h2 className="font-black text-lg mb-3">
+          📦 {profile.nickname}님의 판매글 {products?.length ?? 0}
+        </h2>
 
         {!products || products.length === 0 ? (
           <div className="goguma-card text-center py-12">
             <div className="text-5xl mb-4">🛒</div>
-            <p className="font-black text-lg mb-1">아직 상품이 없어요!</p>
-            <p className="text-gray-400 font-semibold text-sm">첫 번째로 물건을 올려봐요 ㅎㅎ</p>
+            <p className="font-black text-lg mb-1">아직 올린 상품이 없어요!</p>
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4">
@@ -99,7 +117,6 @@ export default async function MarketPage() {
                 className="bg-white rounded-2xl overflow-hidden cursor-pointer hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                 style={{ border: '3px solid black', boxShadow: '4px 4px 0px black', display: 'block' }}
               >
-                {/* 상품 이미지 */}
                 <div className="w-full bg-gray-100 flex items-center justify-center overflow-hidden" style={{ height: 140 }}>
                   {product.image_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -109,7 +126,6 @@ export default async function MarketPage() {
                   )}
                 </div>
 
-                {/* 상품 정보 */}
                 <div className="p-3">
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={{ background: '#FFF3EE', color: 'var(--goguma-orange)' }}>
                     {CATEGORY_LABEL[product.category] ?? product.category}
@@ -117,9 +133,6 @@ export default async function MarketPage() {
                   <p className="font-black text-sm mt-1 line-clamp-1">{product.title}</p>
                   <p className="font-black text-base mt-1" style={{ color: 'var(--goguma-orange)' }}>
                     {product.price.toLocaleString()}원
-                  </p>
-                  <p className="text-xs text-gray-500 font-bold mt-1">
-                    👤 {sellerMap[product.user_id] ?? '고구마유저'}
                   </p>
                   <div className="flex items-center gap-2 text-xs font-bold text-gray-400 mt-1.5">
                     <span>👀 {product.view_count}</span>
