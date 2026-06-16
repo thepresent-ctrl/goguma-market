@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import DeleteButton from './DeleteButton'
+import ViewCounter from './ViewCounter'
+import LikeButton from './LikeButton'
+import CommentSection from './CommentSection'
 
 const CATEGORY_LABEL: Record<string, string> = {
   electronics: '📱 전자기기',
@@ -35,6 +38,43 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
   const isOwner = user.id === product.user_id
   const status = STATUS_LABEL[product.status] ?? STATUS_LABEL.selling
+
+  // 좋아요: 개수 + 내가 눌렀는지
+  const { count: likeCount } = await supabase
+    .from('likes')
+    .select('id', { count: 'exact', head: true })
+    .eq('product_id', id)
+
+  const { data: myLike } = await supabase
+    .from('likes')
+    .select('id')
+    .eq('product_id', id)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  // 댓글: 목록 + 작성자 닉네임
+  const { data: rawComments } = await supabase
+    .from('comments')
+    .select('*')
+    .eq('product_id', id)
+    .order('created_at', { ascending: true })
+
+  const commentUserIds = [...new Set(rawComments?.map(c => c.user_id) ?? [])]
+  const { data: commenters } = commentUserIds.length
+    ? await supabase.from('profiles').select('id, nickname').in('id', commentUserIds)
+    : { data: [] }
+
+  const nicknameMap: Record<string, string> = Object.fromEntries(
+    commenters?.map(c => [c.id, c.nickname]) ?? []
+  )
+
+  const comments = (rawComments ?? []).map(c => ({
+    id: c.id,
+    user_id: c.user_id,
+    content: c.content,
+    created_at: c.created_at,
+    nickname: nicknameMap[c.user_id] ?? '고구마유저',
+  }))
 
   return (
     <div className="min-h-screen star-bg p-6">
@@ -86,13 +126,27 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             {product.description}
           </p>
 
-          <p className="text-xs text-gray-400 font-semibold">
-            등록일: {new Date(product.created_at).toLocaleDateString('ko-KR')}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-gray-400 font-semibold">
+              등록일: {new Date(product.created_at).toLocaleDateString('ko-KR')}
+            </p>
+            <p className="text-xs text-gray-400 font-semibold">
+              👀 조회 {product.view_count}
+            </p>
+          </div>
+
+          {/* 좋아요 버튼 */}
+          <div className="flex mt-5">
+            <LikeButton
+              productId={id}
+              initialCount={likeCount ?? 0}
+              initialLiked={!!myLike}
+            />
+          </div>
 
           {/* 본인 상품일 때만 수정/삭제 버튼 표시 */}
           {isOwner && (
-            <div className="flex gap-3 mt-6">
+            <div className="flex gap-3 mt-3">
               <Link href={`/market/${id}/edit`} className="goguma-btn goguma-btn-yellow flex-1 text-center">
                 ✏️ 수정하기
               </Link>
@@ -100,7 +154,13 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </div>
           )}
         </div>
+
+        {/* 댓글 영역 */}
+        <CommentSection productId={id} currentUserId={user.id} initialComments={comments} />
       </div>
+
+      {/* 조회수 증가 (마운트 시 1회) */}
+      <ViewCounter productId={id} />
     </div>
   )
 }
