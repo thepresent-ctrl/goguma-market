@@ -135,13 +135,22 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </p>
           </div>
 
-          {/* 좋아요 버튼 */}
+          {/* 좋아요 — 본인 글에는 누를 수 없고 수만 표시 */}
           <div className="flex mt-5">
-            <LikeButton
-              productId={id}
-              initialCount={likeCount ?? 0}
-              initialLiked={!!myLike}
-            />
+            {isOwner ? (
+              <div
+                className="goguma-btn goguma-btn-white flex-1 text-center cursor-default"
+                style={{ color: '#888' }}
+              >
+                ❤️ 좋아요 {likeCount ?? 0}
+              </div>
+            ) : (
+              <LikeButton
+                productId={id}
+                initialCount={likeCount ?? 0}
+                initialLiked={!!myLike}
+              />
+            )}
           </div>
 
           {/* 본인 상품일 때만 수정/삭제 버튼 표시 */}

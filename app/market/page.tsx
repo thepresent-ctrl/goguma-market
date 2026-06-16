@@ -40,6 +40,23 @@ export default async function MarketPage() {
     sellers?.map(s => [s.id, s.nickname]) ?? []
   )
 
+  // 상품별 좋아요 수 / 댓글 수 (한 번에 가져와서 집계)
+  const productIds = products?.map(p => p.id) ?? []
+
+  const { data: allLikes } = productIds.length
+    ? await supabase.from('likes').select('product_id').in('product_id', productIds)
+    : { data: [] }
+
+  const { data: allComments } = productIds.length
+    ? await supabase.from('comments').select('product_id').in('product_id', productIds)
+    : { data: [] }
+
+  const likeCountMap: Record<string, number> = {}
+  allLikes?.forEach(l => { likeCountMap[l.product_id] = (likeCountMap[l.product_id] ?? 0) + 1 })
+
+  const commentCountMap: Record<string, number> = {}
+  allComments?.forEach(c => { commentCountMap[c.product_id] = (commentCountMap[c.product_id] ?? 0) + 1 })
+
   return (
     <div className="min-h-screen star-bg p-6">
       {/* 네비게이션 */}
@@ -102,6 +119,11 @@ export default async function MarketPage() {
                   <p className="text-xs text-gray-500 font-bold mt-1">
                     👤 {sellerMap[product.user_id] ?? '고구마유저'}
                   </p>
+                  <div className="flex items-center gap-2 text-xs font-bold text-gray-400 mt-1.5">
+                    <span>👀 {product.view_count}</span>
+                    <span>❤️ {likeCountMap[product.id] ?? 0}</span>
+                    <span>💬 {commentCountMap[product.id] ?? 0}</span>
+                  </div>
                 </div>
               </Link>
             ))}
